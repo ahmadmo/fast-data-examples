@@ -15,6 +15,17 @@ CREATE TABLE test.impression_by_request_id (
 );
 ```
 
+## Create Elasticsearch Index
+```http
+PUT /ad-events
+{
+  "settings": {
+    "index.number_of_shards" : 1,
+    "index.number_of_replicas" : 0
+  }
+}
+```
+
 ## Build Assembly JAR
 ```bash
 sbt clean assembly
