@@ -1,3 +1,20 @@
+## Create Cassandra Table
+```sql
+CREATE KEYSPACE test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}
+
+USE test;
+
+CREATE TABLE test.impression (
+    request_id text PRIMARY KEY,
+    ad_id text,
+    ad_title text,
+    advertiser_cost double,
+    app_id text,
+    app_title text,
+    impression_time bigint
+);
+```
+
 ## Build Assembly JAR
 ```bash
 sbt clean assembly
