@@ -4,7 +4,7 @@ CREATE KEYSPACE test WITH replication = {'class': 'SimpleStrategy', 'replication
 
 USE test;
 
-CREATE TABLE test.impression (
+CREATE TABLE test.impression_by_request_id (
     request_id text PRIMARY KEY,
     ad_id text,
     ad_title text,
