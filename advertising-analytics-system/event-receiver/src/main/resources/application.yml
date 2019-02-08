@@ -1,0 +1,21 @@
+logging:
+  level:
+    receiver: DEBUG
+
+server:
+  port: 18181
+
+spring:
+  cloud:
+    zookeeper:
+      connect-string: "zoo1:2181,zoo2:2181,zoo3:2181"
+
+kafka:
+  impressions-topic:
+    name: "impression"
+    num-partitions: 1
+    replication-factor: 1
+  clicks-topic:
+    name: "click"
+    num-partitions: 1
+    replication-factor: 1

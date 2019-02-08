@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+option optimize_for = SPEED; // default
+
+option java_package = "transporter";
+option java_outer_classname = "Events";
+
+message Impression {
+    string requestId = 1;
+    string adId = 2;
+    string adTitle = 3;
+    double advertiserCost = 4;
+    string appId = 5;
+    string appTitle = 6;
+    uint64 impressionTime = 7;
+}
+
+message Click {
+    string requestId = 1;
+    uint64 clickTime = 2;
+}
+
+message Ad {
+    string requestId = 1;
+    string adId = 2;
+    string adTitle = 3;
+    double advertiserCost = 4;
+    string appId = 5;
+    string appTitle = 6;
+    uint64 impressionTime = 7;
+    uint64 clickTime = 8;
+}
