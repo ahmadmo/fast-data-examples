@@ -133,6 +133,7 @@ object SparkApp extends App {
 
       // feedback unmatched clicks to kafka
       // this is not an optimal solution, but it works!
+      // FIXME set TTL for unmatched clicks
       unmatchedClicks
         .map(_.toByteArray)
         .toDS()
