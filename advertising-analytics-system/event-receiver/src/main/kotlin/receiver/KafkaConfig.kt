@@ -29,7 +29,7 @@ class KafkaAdminConfig(private val curatorFramework: CuratorFramework,
         }
         brokers = endpoints.joinToString(",")
         KotlinLogging.logger {}.info {
-            "found kafka brokers [endpoint = $endpoints]"
+            "found kafka brokers [endpoints = $endpoints]"
         }
     }
 
