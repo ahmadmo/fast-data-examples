@@ -6,7 +6,7 @@ import com.datastax.spark.connector.cql.{CassandraConnector, CassandraConnectorC
 import com.datastax.spark.connector.toRDDFunctions
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
-import org.apache.spark.sql.streaming.{OutputMode, Trigger}
+import org.apache.spark.sql.streaming.Trigger
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
 import org.elasticsearch.hadoop.cfg.{ConfigurationOptions => EsConf}
 import org.elasticsearch.spark.sparkRDDFunctions
@@ -54,7 +54,7 @@ object SparkApp extends App {
 
   import spark.implicits._
 
-  val impressions = spark
+  val impressionsFromKafka = spark
     .readStream
     .format("kafka")
     .option("kafka.bootstrap.servers", kafkaBrokers)
@@ -65,7 +65,7 @@ object SparkApp extends App {
     .as[Array[Byte]]
     .map(Impression.parseFrom)
 
-  val clicks = spark
+  val clicksFromKafka = spark
     .readStream
     .format("kafka")
     .option("kafka.bootstrap.servers", kafkaBrokers)
@@ -76,34 +76,48 @@ object SparkApp extends App {
     .as[Array[Byte]]
     .map(Click.parseFrom)
 
-  // FIXME out-of-order events
-  // possible solutions:
-  // 1. watermarks
+  // TODO improve out-of-order event handling
+  // possible approaches: (sorted by complexity asc)
+  // 1. feedback to kafka and reprocess early data (CURRENT)
   // 2. external cache (Redis, Ignite, etc.)
-  // 3. feedback to kafka
-  // 4. reprocess early data (clicks)
+  // 3. using watermarks (a Spark Source must be implemented for C*)
 
-  val cassandraSink = impressions
+  val cassandraSink = impressionsFromKafka
     .writeStream
-    .outputMode(OutputMode.Update())
     .option("checkpointLocation", checkpointLocation + "/impression")
     .trigger(Trigger.ProcessingTime(batchDurationMs))
     .foreachBatch { (set, _) =>
-      set.rdd
-        // .repartitionByCassandraReplica(cassandraKeyspace, cassandraTable)
-        .saveToCassandra(cassandraKeyspace, cassandraTable)
+      set.rdd.saveToCassandra(cassandraKeyspace, cassandraTable)
     }
+    .queryName("CassandraSink")
     .start()
 
-  val elasticsearchSink = clicks
+  val elasticsearchSink = clicksFromKafka
     .writeStream
-    .outputMode(OutputMode.Append())
     .option("checkpointLocation", checkpointLocation + "/click")
     .trigger(Trigger.ProcessingTime(batchDurationMs))
     .foreachBatch { (set, _) =>
-      set.rdd
-        // .repartitionByCassandraReplica(cassandraKeyspace, cassandraTable)
+
+      val clicks = set.rdd.cache()
+
+      val matchedClicks = clicks
+        .repartitionByCassandraReplica(cassandraKeyspace, cassandraTable)
         .joinWithCassandraTable[Impression](cassandraKeyspace, cassandraTable)
+        .cache()
+
+      val unmatchedClicks = clicks.subtract(matchedClicks.map(_._1))
+
+      matchedClicks
+        .filter {
+          case (click, impression) =>
+            if (click.clickTime < impression.impressionTime) {
+              // OPTIONAL: save to kafka for further analysis
+              logger.warn(s"invalid click event time [impression = $impression, click = $click]")
+              false
+            } else {
+              true
+            }
+        }
         .map { case (click, impression) =>
           Ad(
             impression.requestId,
@@ -116,7 +130,19 @@ object SparkApp extends App {
             click.clickTime)
         }
         .saveToEs(esResource)
+
+      // feedback unmatched clicks to kafka
+      // this is not an optimal solution, but it works!
+      unmatchedClicks
+        .map(_.toByteArray)
+        .toDS()
+        .write
+        .format("kafka")
+        .option("kafka.bootstrap.servers", kafkaBrokers)
+        .option("topic", kafkaConfig.getString("clicksTopic"))
+        .save()
     }
+    .queryName("ElasticsearchSink")
     .start()
 
   cassandraSink.awaitTermination()

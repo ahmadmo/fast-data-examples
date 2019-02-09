@@ -31,7 +31,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-sql-kafka-0-10" % sparkVersion % "provided",
   "com.datastax.spark" %% "spark-cassandra-connector" % sparkCassandraVersion,
-  "org.elasticsearch" %% "elasticsearch-spark-20" % "6.6.0",
+  "org.elasticsearch" %% "elasticsearch-spark-20" % sparkElasticsearchVersion,
   "com.thesamet.scalapb" %% "sparksql-scalapb" % "0.8.0")
 
 PB.targets in Compile := Seq(
