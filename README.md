@@ -9,7 +9,7 @@ This is a famous quote and you probably already heard it.
 
 *Data, in today’s business and technology world, is indispensable. The field of Big Data and Big Data Analytics is growing day by day. Most software developers think it's tough to learn big data and tend to be scared of it. Learning big data CAN be easy and enjoyable if you learn it by examples, but, of course, it is so difficult to master it :D*
 
-Here, we aim to learn and possibly master Big/Fast Data by some RealWorld examples provided by the community.
+Here, we aim to learn and possibly master Big/Fast Data by some RealWorld examples provided by the open source community.
 
 ## Why Fast Data?
 > ### Introduction
@@ -27,10 +27,10 @@ Here, we aim to learn and possibly master Big/Fast Data by some RealWorld exampl
 
 ## Tools and Technologies
 There are tons of tools and technologies in the field of Big/Fast Data, but some of them are more mature and widely used in *real* applications.  
-In this repository we prefer to provide exmaples with the tools and technologies demonstrated in the [Fast Data Architecture](https://raw.githubusercontent.com/ahmadmo/fast-data-examples/master/fast-data-architecture.png).
+In this repository we prefer to provide exmaples with the tools and technologies demonstrated in the [Fast Data Architecture](#streaming-architecture).
 
 ## Programming Languages
-As described in the [previous section](#tools-and-technologies), any supported programming language by the tools and technologies demonstrated in the [Fast Data Architecture](https://raw.githubusercontent.com/ahmadmo/fast-data-examples/master/fast-data-architecture.png) can be used in this repository.
+As described in the [previous section](#tools-and-technologies), any supported programming language by the tools and technologies demonstrated in the [Fast Data Architecture](#streaming-architecture) can be used in this repository.
 
 Most used programming languages are:
 - **Java**
