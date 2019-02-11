@@ -10,7 +10,9 @@ import reactor.core.publisher.Mono
 
 sealed class EventHandler(private val producer: EventProducer) {
 
-    abstract fun newEventBuilder(): Message.Builder
+    protected abstract fun newEventBuilder(): Message.Builder
+
+    protected abstract fun validate(event: Message): Boolean
 
     private fun ServerRequest.bodyToEvent(): Mono<Message> =
             bodyToMono(String::class.java).map { json ->
@@ -20,9 +22,14 @@ sealed class EventHandler(private val producer: EventProducer) {
             }
 
     fun handle(request: ServerRequest): Mono<ServerResponse> =
-            request.bodyToEvent().flatMap(producer::send).flatMap { sent ->
-                if (sent) ServerResponse.ok().build()
-                else ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+            request.bodyToEvent().flatMap { event ->
+                when {
+                    validate(event) -> producer.send(event).flatMap { sent ->
+                        if (sent) ServerResponse.ok().build()
+                        else ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                    }
+                    else -> ServerResponse.status(HttpStatus.BAD_REQUEST).build()
+                }
             }
 }
 
@@ -31,6 +38,9 @@ class ImpressionEventHandler(producer: ImpressionEventProducer) : EventHandler(p
 
     override fun newEventBuilder(): Message.Builder =
             Events.Impression.newBuilder()
+
+    override fun validate(event: Message): Boolean =
+            (event as Events.Impression).impressionTime <= System.currentTimeMillis()
 }
 
 @Component
@@ -38,4 +48,7 @@ class ClickEventHandler(producer: ClickEventProducer) : EventHandler(producer) {
 
     override fun newEventBuilder(): Message.Builder =
             Events.Click.newBuilder()
+
+    override fun validate(event: Message): Boolean =
+            (event as Events.Click).clickTime <= System.currentTimeMillis()
 }

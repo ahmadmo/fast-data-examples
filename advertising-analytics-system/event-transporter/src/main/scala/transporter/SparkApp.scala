@@ -36,6 +36,7 @@ object SparkApp extends App {
   private val cassandraKeyspace = cassandraConfig.getString("keyspace")
   private val cassandraTable = cassandraConfig.getString("table")
   private val esResource = esConfig.getString("resource")
+  private val unmatchedClickTtl = config.getDuration("unmatchedClickTtl").toMillis
 
   val spark = SparkSession
     .builder
@@ -112,7 +113,7 @@ object SparkApp extends App {
           case (click, impression) =>
             if (click.clickTime < impression.impressionTime) {
               // OPTIONAL: save to kafka for further analysis
-              logger.warn(s"invalid click event time [impression = $impression, click = $click]")
+              logger.error(s"invalid click event time [impression = $impression, click = $click]")
               false
             } else {
               true
@@ -133,8 +134,17 @@ object SparkApp extends App {
 
       // feedback unmatched clicks to kafka
       // this is not an optimal solution, but it works!
-      // FIXME set TTL for unmatched clicks
       unmatchedClicks
+        .filter { click =>
+          val expirationTime = click.clickTime + unmatchedClickTtl
+          if (expirationTime > System.currentTimeMillis()) {
+            logger.info(s"feedback unmatched click to kafka [$click]")
+            true
+          } else {
+            logger.warn(s"unmatched click expired [$click]")
+            false
+          }
+        }
         .map(_.toByteArray)
         .toDS()
         .write
